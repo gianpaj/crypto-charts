@@ -1,0 +1,24 @@
+{
+  "name": "@crypto-charts/auth",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@crypto-charts/db": "workspace:*",
+    "@crypto-charts/env": "workspace:*",
+    "better-auth": "catalog:",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@crypto-charts/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}

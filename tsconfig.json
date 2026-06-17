@@ -1,0 +1,3 @@
+{
+  "extends": "@crypto-charts/config/tsconfig.base.json"
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@crypto-charts/api",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./*": {
+      "default": "./src/*.ts"
+    }
+  },
+  "scripts": {},
+  "dependencies": {
+    "@crypto-charts/auth": "workspace:*",
+    "@crypto-charts/db": "workspace:*",
+    "@crypto-charts/env": "workspace:*",
+    "@trpc/client": "catalog:",
+    "@trpc/server": "catalog:",
+    "dotenv": "catalog:",
+    "next": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@crypto-charts/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
