@@ -9,7 +9,10 @@
       "default": "./src/*.ts"
     }
   },
-  "scripts": {},
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
   "dependencies": {
     "@crypto-charts/auth": "workspace:*",
     "@crypto-charts/db": "workspace:*",
@@ -22,6 +25,7 @@
   },
   "devDependencies": {
     "@crypto-charts/config": "workspace:*",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "^3.2.4"
   }
 }
