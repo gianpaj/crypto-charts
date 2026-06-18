@@ -69,6 +69,14 @@ function formatYear(t: number): string {
   return String(new Date(t).getUTCFullYear());
 }
 
+function formatUpdated(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.toISOString().slice(0, 10)} ${String(d.getUTCHours()).padStart(2, "0")}:${String(
+    d.getUTCMinutes(),
+  ).padStart(2, "0")} UTC`;
+}
+
 function CustomTooltip({
   active,
   payload,
@@ -159,6 +167,7 @@ export function BtcRiskChart() {
   }, [data, priceScale]);
 
   const latest = allData[allData.length - 1];
+  const updatedAt = query.data?.generatedAt;
 
   return (
     <div className="flex flex-col gap-4 text-white">
@@ -290,6 +299,12 @@ export function BtcRiskChart() {
           BTC Risk
         </span>
       </div>
+
+      {updatedAt && (
+        <div className="text-center text-[11px] text-white/35">
+          Last updated: {formatUpdated(updatedAt)}
+        </div>
+      )}
     </div>
   );
 }

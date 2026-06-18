@@ -1,105 +1,89 @@
 # crypto-charts
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Next.js, Self, TRPC, and more.
+A crypto dashboard inspired by [Into The Cryptoverse](https://intothecryptoverse.com).
+The first chart recreates Benjamin Cowen's **BTC Historical Risk Levels**: Bitcoin price on a
+log axis (blue) alongside a 0–1 "risk" metric (red), where low risk highlights long-term
+accumulation zones and high risk highlights distribution zones.
 
-## Features
+### 🔗 Live: https://gianpaj.github.io/crypto-charts/
 
-- **TypeScript** - For type safety and improved developer experience
-- **Next.js** - Full-stack React framework
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **Shared UI package** - shadcn/ui primitives live in `packages/ui`
-- **tRPC** - End-to-end type-safe APIs
-- **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
-- **Authentication** - Better-Auth
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
+> Risk here is a **transparent, open approximation** of Cowen's metric (his exact formula is
+> unpublished). Not financial advice.
 
-## Getting Started
+## The risk metric
 
-First, install the dependencies:
+```
+risk = minMax( (ln(price) − ln(SMA365)) × dayIndex^0.395 )
+```
+
+- `ln(price) − ln(SMA365)` — how stretched price is above/below its ~1-year moving average.
+- `× dayIndex^0.395` — the diminishing-returns dampening so cycle tops land at comparable risk.
+- `minMax → 0..1` — normalized over all history (all-time hottest = 1, coldest = 0).
+
+Implemented in `packages/api/src/lib/risk.ts` (pure, unit-tested with Vitest).
+
+## Data
+
+Daily BTC/USD history comes from **Bitstamp** (keyless, back to 2011-08-25). At build time
+`apps/web/scripts/generate-risk-data.mts` fetches the history, computes risk, and writes
+`apps/web/public/data/btc-risk.json`. The static site loads that JSON in the browser — no
+server, no API keys. CoinGecko's free tier caps at 365 days and CryptoCompare now requires a
+key, so Bitstamp is used for full history.
+
+## Deployment (GitHub Pages)
+
+The app is a fully static export (`output: "export"`) deployed via GitHub Actions
+(`.github/workflows/deploy.yml`) — on push to `main`, on a daily cron (refreshes the risk
+data), and on manual dispatch.
+
+One-time setup: **Settings → Pages → Build and deployment → Source = "GitHub Actions"**.
+
+## Local development
 
 ```bash
 pnpm install
+pnpm --filter web generate-data   # fetch BTC history + compute risk -> public/data/btc-risk.json
+pnpm dev:web                       # http://localhost:3001
 ```
 
-## Database Setup
-
-This project uses SQLite with Drizzle ORM.
-
-1. Start the local SQLite database (optional):
+Build the static site locally (as Pages does):
 
 ```bash
-pnpm run db:local
+pnpm --filter web generate-data
+NEXT_PUBLIC_BASE_PATH=/crypto-charts pnpm --filter web build   # output in apps/web/out
 ```
 
-2. Update your `.env` file in the `apps/web` directory with the appropriate connection details if needed.
+## Status
 
-3. Apply the schema to your database:
+Auth and database functionality are **currently disabled** to keep the site static. The
+`packages/{auth,db,api}` packages remain in the repo (just not imported by the web app), so
+login/DB can be re-enabled later. See `docs/specs/` for the spec, decisions, and open questions.
 
-```bash
-pnpm run db:push
-```
-
-Then, run the development server:
-
-```bash
-pnpm run dev
-```
-
-Open [http://localhost:3001](http://localhost:3001) in your browser to see the fullstack application.
-
-## UI Customization
-
-React web apps in this stack share shadcn/ui primitives through `packages/ui`.
-
-- Change design tokens and global styles in `packages/ui/src/styles/globals.css`
-- Update shared primitives in `packages/ui/src/components/*`
-- Adjust shadcn aliases or style config in `packages/ui/components.json` and `apps/web/components.json`
-
-### Add more shared components
-
-Run this from the project root to add more primitives to the shared UI package:
-
-```bash
-npx shadcn@latest add accordion dialog popover sheet table -c packages/ui
-```
-
-Import shared components like this:
-
-```tsx
-import { Button } from "@crypto-charts/ui/components/button";
-```
-
-### Add app-specific blocks
-
-If you want to add app-specific blocks instead of shared primitives, run the shadcn CLI from `apps/web`.
-
-## Git Hooks and Formatting
-
-- Run checks: `pnpm run check`
-
-## Project Structure
+## Project structure
 
 ```
 crypto-charts/
 ├── apps/
-│   └── web/         # Fullstack application (Next.js)
+│   └── web/            # Static Next.js site (the dashboard)
+│       ├── scripts/    # build-time risk-data generator
+│       └── public/data # generated btc-risk.json
 ├── packages/
-│   ├── ui/          # Shared shadcn/ui components and styles
-│   ├── api/         # API layer / business logic
-│   ├── auth/        # Authentication configuration & logic
-│   └── db/          # Database schema & queries
+│   ├── ui/             # Shared shadcn/ui components and styles
+│   ├── api/            # Risk metric + data fetching (lib/) — reused by the build script
+│   ├── auth/           # Authentication (disabled for now)
+│   └── db/             # Database schema (disabled for now)
+└── docs/specs/         # Spec, implementation notes, decisions
 ```
 
-## Available Scripts
+## Scripts
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run dev:web`: Start only the web application
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:generate`: Generate database client/types
-- `pnpm run db:migrate`: Run database migrations
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run db:local`: Start the local SQLite database
-- `pnpm run check`: Run Oxlint and Oxfmt
+- `pnpm dev:web` — run the web app in dev
+- `pnpm --filter web generate-data` — regenerate the risk JSON
+- `pnpm --filter web build` — static production build (`apps/web/out`)
+- `pnpm --filter @crypto-charts/api test` — run the risk-metric unit tests
+- `pnpm check` — Oxlint + Oxfmt
+
+## Tech
+
+TypeScript · Next.js (static export) · React · Recharts · TanStack Query · Tailwind · Vitest ·
+Oxlint/Oxfmt · pnpm workspaces. Built with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack).
