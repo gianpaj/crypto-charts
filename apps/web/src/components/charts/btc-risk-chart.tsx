@@ -12,10 +12,22 @@ import {
   YAxis,
 } from "recharts";
 
-import { trpc } from "@/utils/trpc";
-
 const PRICE_COLOR = "#4f9cf9"; // BTC Price (blue)
 const RISK_COLOR = "#e8425b"; // BTC Risk (red)
+
+// Prefixed when served under a GitHub Pages project path (e.g. /crypto-charts).
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+interface RiskJson {
+  generatedAt: string;
+  points: { date: string; price: number; risk: number }[];
+}
+
+async function fetchRiskData(): Promise<RiskJson> {
+  const res = await fetch(`${BASE_PATH}/data/btc-risk.json`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return (await res.json()) as RiskJson;
+}
 
 // BTC has the longest history / most cycles, so ITC assigns it max confidence.
 const CONFIDENCE = 9;
@@ -115,11 +127,11 @@ export function BtcRiskChart() {
   const [range, setRange] = useState<RangeKey>("all");
   const [priceScale, setPriceScale] = useState<Scale>("log");
   const [metricScale, setMetricScale] = useState<Scale>("linear");
-  const query = useQuery(trpc.btcRisk.queryOptions());
+  const query = useQuery({ queryKey: ["btc-risk"], queryFn: fetchRiskData });
 
   const allData = useMemo<ChartPoint[]>(() => {
     if (!query.data) return [];
-    return query.data.map((p) => ({
+    return query.data.points.map((p) => ({
       t: Date.parse(`${p.date}T00:00:00Z`),
       price: p.price,
       risk: p.risk,

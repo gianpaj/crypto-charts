@@ -16,6 +16,9 @@ See `btc-risk-dashboard.md` for the full spec.
 Verified live: 5,411 daily candles fetched (2011-08-25 → today), 5,047 risk points.
 Latest risk ≈ 0.200 (ITC shows 0.296 — see Q1). Tops/bottoms align with ITC (table below).
 
+Now converted to a **fully static site for GitHub Pages** (login/DB disabled) — verified the
+`output: export` build serves correctly under the `/crypto-charts` base path. See D10–D14.
+
 ## Decisions
 
 - **D1 — Data layer = tRPC procedure, not a bare route handler.** The spec sketched
@@ -49,6 +52,31 @@ Latest risk ≈ 0.200 (ITC shows 0.296 — see Q1). Tops/bottoms align with ITC 
 - **D8 — Risk formula** (from spec): `risk = minMax( (ln(price) − ln(SMA365)) × dayIndex^0.395 )`
   using **global** min/max (published retro look). `dayIndex` is 1-based from start of history.
 - **D9 — Default theme set to `dark`** to match the ITC aesthetic.
+
+### Static GitHub Pages deployment (login/DB disabled)
+
+- **D10 — Fully static export (`output: "export"`), no server.** Per request, all
+  login/DB/server functionality is disabled for now. The app is now a pure static site.
+- **D11 — Data baked at build time.** `apps/web/scripts/generate-risk-data.mts` (run via `tsx`)
+  reuses `fetchDailyHistory` + `computeRisk` from `packages/api/src/lib` to write
+  `apps/web/public/data/btc-risk.json`. The chart fetches that JSON client-side (TanStack Query,
+  no tRPC). The committed JSON is a convenience/fallback; CI regenerates it fresh each build.
+- **D12 — Removed from the web app:** `app/api/*` (tRPC + auth routes), `app/dashboard`,
+  `app/login`, `utils/trpc.ts`, `lib/auth-client.ts`, `components/{user-menu,sign-in-form,
+  sign-up-form,loader}.tsx`. Header simplified to title + theme toggle. `providers.tsx` now uses
+  a plain `QueryClient` (`lib/query-client.ts`). The `packages/{auth,db,api}` packages are LEFT
+  in place (just no longer imported by the web app) so login/DB can be re-enabled later.
+- **D13 — basePath via `NEXT_PUBLIC_BASE_PATH`.** Project site lives at
+  `https://gianpaj.github.io/crypto-charts/`, so assets must be prefixed with `/crypto-charts`.
+  The workflow sets `NEXT_PUBLIC_BASE_PATH=/${{ github.event.repository.name }}` automatically;
+  empty locally. `public/.nojekyll` prevents Pages from stripping the `_next/` dir.
+- **D14 — Workflow `.github/workflows/deploy.yml`:** on push to `main`, daily cron (06:00 UTC,
+  refreshes risk data), and manual dispatch. Installs → `generate-data` → `build` → upload →
+  `deploy-pages`. Node 24 + pnpm 11.7.
+
+**MANUAL STEPS REQUIRED (cannot be done from here):**
+1. In GitHub: repo **Settings → Pages → Build and deployment → Source = "GitHub Actions"**.
+2. Push `main` (or run the workflow via "Actions" tab). Site deploys to the URL above.
 
 ## Algo fidelity vs ITC (measured against the screenshot)
 
